@@ -1,0 +1,115 @@
+%YAML 1.2
+---
+name: magic
+file_extensions: [magic]
+scope: source.magic
+
+variables:
+
+  reserved_words: |-
+    (?x:
+      {{keywords}}
+    | {{storage_types}}
+    | {{constants}}
+    | {{operator_arithmetic}}
+    | {{operator_math}}
+    | {{operator_bool}}
+    )
+  keywords: |-
+
+    (?x: 
+      NOMINE | INCOMMUTABILIS
+    | VALET
+    | SI | ALIUS 
+    | QUANDIU | TRAICERE
+    | RUMPITUR | PROGREDI
+    | SECUNDUM | QUANDO
+    | REDIT
+    | IUSSUS
+    | FACERE | COMPLEVIT )
+
+  # Storage Types
+  storage_types: |-
+    (?x: 
+        VERITAS
+      | ALBUM
+      | NUMERUS
+      | SYMBOLUM
+      | PHRASIS )
+
+  # Literals
+  constants: |-
+    (?x: FICTUS | NIHIL | VERUM )
+
+  # operator
+  operator_arithmetic: |-
+    (?x: SUP_EST | INF_EST | EST | INF | SUP | ->)
+
+  operator_math: |-
+    (?x: PLUS | MINUS | DIV | TIME | POT )
+
+  # operator
+  operator_bool: |-
+    (?x: ET | OR | NOT)
+
+contexts:
+  main:
+
+    - match: '"'
+      scope: punctuation.definition.string.begin
+      push : string
+
+    - match: \'
+      scope: punctuation.definition.char.begin
+      push : char
+
+    - match: '\('
+      scope: punctuation.definition.comment.block
+      push : comment_block
+
+    - match: \b(?x:{{keywords}})\b
+      scope: keyword.control
+
+    - match: NIHIL|\b(NIHIL)*[IVXLCDM.]+(NIHIL)*\b
+      scope: constant.numeric.value
+
+    - match: \b(?x:{{storage_types}})\b
+      scope: storage.type
+
+    - match: \b(?x:{{constants}})\b
+      scope: constant.language
+
+    - match: \b(?x:{{operator_arithmetic}})\b
+      scope: keyword.operator.arithmetic
+
+    - match: \b(?x:{{operator_math}})\b
+      scope: keyword.operator.math
+
+    - match: \b(?x:{{operator_bool}})\b
+      scope: keyword.operator.boolean
+
+    - match: \b\w+(?=!)\b
+      scope: entity.name.function
+
+  string:
+    - meta_scope: string.quoted.double
+    - match: '\\.'
+      scope: constant.character.escape
+
+    - match: '"'
+      scope: punctuation.definition.string.end
+      pop  : true
+
+  char:
+    - meta_scope: string.quoted.double
+    - match: '\\.'
+      scope: constant.character.escape
+
+    - match: \'
+      scope: punctuation.definition.char.end
+      pop  : true
+
+  comment_block:
+    - meta_scope: comment.block
+    - match: \)
+      pop: true
