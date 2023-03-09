@@ -17,7 +17,7 @@ public class MagicInterpreteur {
 
     public static String read() throws IOException {
 
-        Path path = Paths.get("C:\\iut\\TP\\PROJET\\Projet 9 -new language\\example.magic");
+        Path path = Paths.get("example.magic");
 
         return Files.readAllLines(path).stream().reduce((s1,s2)->s1+" "+s2).get();
     }
