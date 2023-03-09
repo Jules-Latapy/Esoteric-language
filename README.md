@@ -37,10 +37,12 @@ les fonctions sont appelées avec un '!'.
 | --------  | -------  |
 | SI        | if
 | ALIUS     | else
+| SECUNDUM  | switch
+| QUANDO    | case
 | QUANDIU   | boucle while 
 | TRAICERE  | boucle for
-| RUMPITUR  | PROGREDI
-| SECUNDUM  | QUANDO
+| RUMPITUR  | break
+| PROGREDI  | continue
 | REDIT     | retourne
 | IUSSUS    | declare une fonction
 | FACERE    | commence un bloque
