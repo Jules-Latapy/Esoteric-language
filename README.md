@@ -1,6 +1,8 @@
 # Esoteric-language
 Un language esoteric juste pour le fun
 
+<img src="./image.png">
+
 il est écrit en latin et utilise les chiffres romains
 (NIHIL I V X L C D M )
 
