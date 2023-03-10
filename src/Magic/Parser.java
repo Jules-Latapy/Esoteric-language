@@ -1,15 +1,13 @@
 package Magic;
 
-import java.util.List;
 import java.util.Stack;
-import java.util.function.Function;
 
-class Parser {
+public class Parser {
 
-    static final String symboleSeparateur = " \t\n\0{}<>[]{}(),;.\"'^-+*/|:#";
+    public static final String symboleSeparateur = " \t\n\0{}<>[]{}(),;.\"'^-+*/|:#";
 
-    String code;
-    Parser(String code) {
+    private String code;
+    public Parser(String code) {
         this.code = enleverComment(code);
     }
 
@@ -59,7 +57,7 @@ class Parser {
         return result.toString();
     }
 
-    void run() {
+    public void run() {
         Stack<Instructions.Instruction> stack = new Stack<>();
         Instructions.Block main = new Instructions.Block();
         main.block = (Instructions.Block) new Instructions.Block().create(Keywords.BEGIN.val+" "+code+" "+Keywords.END.val+".", null);
@@ -71,7 +69,7 @@ class Parser {
         main.block.run(stack);
     }
 
-    static int nextSymboleDetached(String code, String symbol) {
+    public static int findSymboleDetached(String code, String symbol) {
         if (symbol.isEmpty() || code.isEmpty()) return -1;
 
         boolean beginSymboleOk = symboleSeparateur.indexOf(symbol.charAt(0)) != -1;
@@ -81,7 +79,7 @@ class Parser {
         //symbole:    ;hello;
         //tout le temps vrai si nextSymbol trouve
         if (beginSymboleOk && endingSymboleOk) {
-            return nextSymbol(code, symbol);
+            return findSymbol(code, symbol);
         }
 
         int next = 0;
@@ -90,7 +88,7 @@ class Parser {
         do {
             if (code.length()<symbol.length() || next>code.length()) return -1;
 
-            next = nextSymbol(code.substring(next), symbol);
+            next = findSymbol(code.substring(next), symbol);
             boolean beginCodeOk = next <= 0 || symboleSeparateur.indexOf(code.charAt(next - 1)) != -1;
             boolean endingCodeOk = next + symbol.length() >= code.length() || symboleSeparateur.indexOf(code.charAt(next + symbol.length())) != -1;
 
@@ -122,9 +120,9 @@ class Parser {
         return -1;
     }
 
-    enum LitteralType {str,chr,comment,tab}
+    public enum LitteralType {str,chr,comment,tab}
 
-    public static int nextSymbol(String code, String symbol) {
+    public static int findSymbol(String code, String symbol) {
 
         if (code==null) return -1;
 
@@ -164,6 +162,55 @@ class Parser {
                 context.pop();
             }
             if (!context.isEmpty() && context.peek() == LitteralType.tab && code.charAt(i) == ']') {
+                context.pop();
+            }
+        }
+
+        return -1;
+    }
+
+    public static int findLastSymbol(String code, String symbol) {
+
+        code = new StringBuilder(code).reverse().toString();
+
+        if (code==null) return -1;
+
+        Stack<LitteralType> context = new Stack<>();
+
+        for (int i = 0; i < code.length(); i++) {
+            if (context.isEmpty()) {
+                if (code.charAt(i) == '"') {
+                    context.push(LitteralType.str);
+                    continue;
+                }
+                if (code.charAt(i) == '\'') {
+                    context.push(LitteralType.chr);
+                    continue;
+                }
+                if (code.charAt(i) == ']') {
+                    context.push(LitteralType.tab);
+                    continue;
+                }
+
+                if (code.substring(i).length() >= symbol.length() &&
+                        code.substring(i, symbol.length() + i).equals(symbol)) {
+                    return (code.length()-1)-i;
+                }
+            }
+
+            //parce que c'est stackable
+            if (code.charAt(i) == ']') {
+                context.push(LitteralType.tab);
+                continue;
+            }
+
+            if (!context.isEmpty() && context.peek() == LitteralType.str && code.charAt(i) == '"') {
+                context.pop();
+            }
+            if (!context.isEmpty() && context.peek() == LitteralType.chr && code.charAt(i) == '\'') {
+                context.pop();
+            }
+            if (!context.isEmpty() && context.peek() == LitteralType.tab && code.charAt(i) == '[') {
                 context.pop();
             }
         }

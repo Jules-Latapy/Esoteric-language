@@ -8,17 +8,17 @@ class Expression extends Instructions.Instruction {
     String info ;
 
     @Override
-    boolean isBegin(String s) {
+    public boolean isBegin(String s) {
         return true;
     }
 
     @Override
-    void run(Stack<Instructions.Instruction> stack) {
+    public void run(Stack<Instructions.Instruction> stack) {
         Calculator.evaluate(info,stack);
     }
 
     @Override
-    Instructions.Instruction create(String s, Instructions.Block b) {
+    public Instructions.Instruction create(String s, Instructions.Block b) {
         Expression coc = new Expression();
         coc.info = s.strip();
         return coc;
@@ -34,7 +34,6 @@ enum Signals{BREAK,CONTINUE,RETURN,EXCEPTION}
 
 public abstract class Instructions {
 
-    public static final boolean DEBUG = true;
     public static Set<Class<? extends Instruction>> BASE_INSTRUCTIONS = new LinkedHashSet<>();
 
     static {
@@ -62,39 +61,38 @@ public abstract class Instructions {
         return null;
     }
 
-    abstract static class Instruction {
+    public abstract static class Instruction {
 
         protected Block block ;
 
-        abstract boolean isBegin(@WithDelimiter String s) ;
+        public abstract boolean isBegin(@WithDelimiter String s) ;
 
-        abstract void run(Stack<Instruction> stack);
+        public abstract void run(Stack<Instruction> stack);
 
-        abstract Instruction create(@WithDelimiter String s, Block b);
+        public abstract Instruction create(@WithDelimiter String s, Block b);
     }
 
-    static class Block extends Instruction {
+    public static class Block extends Instruction {
 
-        Signals signal = null ;
-        List<Instructions.Program> subProg = new ArrayList<>();
+        private Signals signal = null ;
+        public List<Instructions.Program> subProg = new ArrayList<>();
 
-        HashMap<String, Types.Type> variables = new HashMap<>();
+        public HashMap<String, Types.Type> variables = new HashMap<>();
 
-        HashMap<String, Types.Type> constantes = new HashMap<>();
+        public HashMap<String, Types.Type> constantes = new HashMap<>();
 
         public ArrayList<Instruction> instructions = new ArrayList<>();
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.BEGIN.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.BEGIN.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             for (Instruction i : instructions) {
                 if (signal!=null) break;
-                if (DEBUG) System.out.println("|"+i);
                 i.run(stack);
             }
             signal = null;
@@ -103,14 +101,14 @@ public abstract class Instructions {
         public static List<String> decoupe(@WithoutDelimiter String s, String symbol) {
             ArrayList<String> result = new ArrayList<>();
             if (s==null) return result;
-
-            while (Parser.nextSymboleDetached(s,symbol)!=-1) {
-                String tmp = s.substring(0, Parser.nextSymboleDetached(s,symbol));
+            while (Parser.findSymboleDetached(s,symbol)!=-1) {
+                String tmp = s.substring(0, Parser.findSymboleDetached(s,symbol));
                 result.add(tmp);
-                s=s.substring(Parser.nextSymboleDetached(s,symbol)+1);
+                s=s.substring(Parser.findSymboleDetached(s,symbol)+1);
             }
             if(!s.isEmpty())
                 result.add(s);
+
             return result;
         }
 
@@ -136,7 +134,7 @@ public abstract class Instructions {
          *</pre>
          */
         public static int[] getOutterBlock(String s) {
-            final int begin = Parser.nextSymboleDetached(s,"FACERE");
+            final int begin = Parser.findSymboleDetached(s,"FACERE");
             int end =-1;
 
             if (begin!=-1) {
@@ -145,21 +143,21 @@ public abstract class Instructions {
                 while(cptBegin != 0) {
 
                     String reduced = s.substring(beginTmp);
-                    int indexBegin= Parser.nextSymboleDetached(reduced, "FACERE"   )+"FACERE"   .length();
-                    int indexEnd  = Parser.nextSymboleDetached(reduced, "COMPLEVIT")+"COMPLEVIT".length();
+                    int indexBegin= Parser.findSymboleDetached(reduced, "FACERE"   )+"FACERE"   .length();
+                    int indexEnd  = Parser.findSymboleDetached(reduced, "COMPLEVIT")+"COMPLEVIT".length();
 
                     if (indexEnd=="COMPLEVIT".length()-1) {
                         throw new RuntimeException("incomplete block");
                     }
 
                     if (indexBegin!="FACERE".length()-1 && indexBegin<indexEnd) {
-                        beginTmp += Parser.nextSymboleDetached(reduced, "FACERE"   )+"FACERE"   .length();
+                        beginTmp += Parser.findSymboleDetached(reduced, "FACERE"   )+"FACERE"   .length();
                         cptBegin++;
                         continue;
                     }
 
                     if (indexBegin=="FACERE".length()-1 || indexEnd<indexBegin) {
-                        beginTmp+= Parser.nextSymboleDetached(reduced, "COMPLEVIT")+"COMPLEVIT".length();
+                        beginTmp+= Parser.findSymboleDetached(reduced, "COMPLEVIT")+"COMPLEVIT".length();
                         cptBegin--;
                     }
                 }
@@ -170,7 +168,7 @@ public abstract class Instructions {
         }
 
 
-        Block createBlockPure(@WithoutDelimiter String s) {
+        private static Block createBlockPure(@WithoutDelimiter String s) {
             Block result = new Block();
             result.instructions = new ArrayList<>();
 
@@ -183,7 +181,7 @@ public abstract class Instructions {
             return  result;
         }
 
-        Instruction create(String s, Block __) {
+        public Instruction create(String s, Block __) {
             s = s.substring(Keywords.BEGIN.val.length(), s.length()- Keywords.END.val.length()-1);
 
             int[] beginEnd = getOutterBlock(s);
@@ -199,10 +197,7 @@ public abstract class Instructions {
 
                 String before = s.substring(0,beginEnd[0]);
 
-                int lastDotBeforBlock = before.length() - Parser.nextSymbol(new StringBuilder(before).reverse().toString(),".");
-
-                if (lastDotBeforBlock==before.length()+1)
-                    lastDotBeforBlock=0;
+                int lastDotBeforBlock = Parser.findLastSymbol(before, ".")+1;
 
                 String lastInstrBeforeBlock = s.substring(lastDotBeforBlock, beginEnd[0]);
 
@@ -214,9 +209,9 @@ public abstract class Instructions {
                         result.instructions.add(Instructions.create(instr, null));
 
                 if (lastInstrBeforeBlock.isBlank())
-                    result.instructions.add(create(s.substring(beginEnd[0], beginEnd[1]), null));
+                    result.instructions.add(create(s.substring(beginEnd[0], beginEnd[1]), null));//block seule
                 else
-                    result.instructions.add(Instructions.create(lastInstrBeforeBlock, (Block) create(s.substring(beginEnd[0], beginEnd[1] + 1), null)));
+                    result.instructions.add(Instructions.create(lastInstrBeforeBlock, (Block) create(s.substring(beginEnd[0], beginEnd[1]), null)));
 
 
                 s=s.substring(beginEnd[1]);
@@ -239,19 +234,19 @@ public abstract class Instructions {
         }
     }
 
-    static class Const extends Instruction {
+    public static class Const extends Instruction {
         public String type ;
         public String value;
 
         public String name ;
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), "INCOMMUTABILIS") == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), "INCOMMUTABILIS") == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             //ajouter la variable au dernier programme crée
             stack.peek().block.constantes.put(name,Calculator.evaluate(value, stack));
         }
@@ -261,13 +256,13 @@ public abstract class Instructions {
          * INCOMMUTABILIS ALBUM NOMINE NAME VALET [I,II,III,IX].
          */
         @Override
-        Instruction create(String s, Block __) {
-            int begin = Parser.nextSymboleDetached(s.toUpperCase(), Keywords.CONST.val);
+        public Instruction create(String s, Block __) {
+            int begin = Parser.findSymboleDetached(s.toUpperCase(), Keywords.CONST.val);
             s = s.substring(begin+ Keywords.CONST.val.length());
             /*------------------------------*/
             //puisqu'une constante a forcement une valeur
-            int typeEnd = Parser.nextSymboleDetached(s.toUpperCase(), Keywords.NAME.val);
-            int nameEnd = Parser.nextSymboleDetached(s.toUpperCase(), Keywords.VALUE.val);
+            int typeEnd = Parser.findSymboleDetached(s.toUpperCase(), Keywords.NAME.val);
+            int nameEnd = Parser.findSymboleDetached(s.toUpperCase(), Keywords.VALUE.val);
 
             Const result = new Const();
             result.type = s.substring(0, typeEnd).strip();
@@ -282,26 +277,26 @@ public abstract class Instructions {
         }
     }
 
-    static class Var extends Instruction {
+    public static class Var extends Instruction {
         public String type ;
         public String value = "";
         public String name ;
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
 
             for (Class<Types.Type> t : Types.BASE_TYPE) {
 
-                if (Parser.nextSymboleDetached(s.toUpperCase(), t.getSimpleName().toUpperCase()) == 0)
+                if (Parser.findSymboleDetached(s.toUpperCase(), t.getSimpleName().toUpperCase()) == 0)
                     return true;
             }
             //pour les variables sans types
-            return Parser.nextSymboleDetached(s.toUpperCase(), "NOMINE") == 0;
+            return Parser.findSymboleDetached(s.toUpperCase(), "NOMINE") == 0;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
 
             if (value != null ) {
                 Types.Type calculatedValue = Calculator.evaluate(value, stack);
@@ -327,11 +322,11 @@ public abstract class Instructions {
          *              NAME VALET [I,II,III,IX].
          */
         @Override
-        Instruction create(String s, Block __) {
+        public Instruction create(String s, Block __) {
             Var result = new Var();
 
-            int endType = Parser.nextSymboleDetached(s.toUpperCase(), Keywords.NAME.val) ;
-            int endNom  = Parser.nextSymboleDetached(s.toUpperCase(), Keywords.VALUE.val) ;
+            int endType = Parser.findSymboleDetached(s.toUpperCase(), Keywords.NAME.val) ;
+            int endNom  = Parser.findSymboleDetached(s.toUpperCase(), Keywords.VALUE.val) ;
             //si il a na pas de type
             if (s.substring(0, endType).isBlank()) {
 
@@ -368,17 +363,17 @@ public abstract class Instructions {
         }
     }
 
-    static class If extends Instruction {
+    public static class If extends Instruction {
 
         public String condition;
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s, "SI") == 0 ;
+            return Parser.findSymboleDetached(s, "SI") == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             stack.add(this);
             if(((Types.Veritas) Calculator.evaluate(condition, stack)).value) {
                 for (Instruction i : block.instructions) {
@@ -396,10 +391,10 @@ public abstract class Instructions {
         }
 
         @Override
-        Instruction create(String s, Block b) {
+        public Instruction create(String s, Block b) {
             If si = new If();
             si.block = b;
-            si.condition = s.substring(Parser.nextSymboleDetached(s.toUpperCase(), Keywords.IF.val)+ Keywords.IF.val.length());
+            si.condition = s.substring(Parser.findSymboleDetached(s.toUpperCase(), Keywords.IF.val)+ Keywords.IF.val.length());
             return si;
         }
 
@@ -409,21 +404,21 @@ public abstract class Instructions {
         }
     }
 
-    static class Else extends Instruction {
+    public static class Else extends Instruction {
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.ELSE.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.ELSE.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             throw new RuntimeException("Else statement at wrong place");
         }
 
         @Override
-        Instruction create(String s, Block __) {
+        public Instruction create(String s, Block __) {
             return new Else();
         }
 
@@ -433,17 +428,17 @@ public abstract class Instructions {
         }
     }
 
-    static class Switch extends Instruction {
+    public static class Switch extends Instruction {
 
-        String value ;
+        private String value ;
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.SWITCH.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.SWITCH.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             stack.add(this);
             boolean defaut = false;
             Types.Type thingToCompare = Calculator.evaluate(value, stack);
@@ -467,10 +462,10 @@ public abstract class Instructions {
         }
 
         @Override
-        Instruction create(String s, Block b) {
+        public Instruction create(String s, Block b) {
             Switch si = new Switch();
             si.block = b;
-            si.value = s.substring(Parser.nextSymboleDetached(s.toUpperCase(), Keywords.SWITCH.val)+ Keywords.SWITCH.val.length());
+            si.value = s.substring(Parser.findSymboleDetached(s.toUpperCase(), Keywords.SWITCH.val)+ Keywords.SWITCH.val.length());
             return si;
         }
 
@@ -480,28 +475,28 @@ public abstract class Instructions {
         }
     }
 
-    static class Case extends Instruction {
+    public static class Case extends Instruction {
 
         public String value;
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.CASE.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.CASE.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             stack.add(this);
             block.run(stack);
             stack.remove(this);
         }
 
         @Override
-        Instruction create(String s, Block b) {
+        public Instruction create(String s, Block b) {
             Case si = new Case();
             si.block = b;
-            si.value = s.substring(Parser.nextSymboleDetached(s.toUpperCase(), Keywords.CASE.val)+ Keywords.CASE.val.length());
+            si.value = s.substring(Parser.findSymboleDetached(s.toUpperCase(), Keywords.CASE.val)+ Keywords.CASE.val.length());
             return si;
         }
 
@@ -511,16 +506,16 @@ public abstract class Instructions {
         }
     }
 
-    static class Break extends Instruction {
+    public static class Break extends Instruction {
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.BREAK.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.BREAK.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             Stack<Instructions.Instruction> stack2 = (Stack<Instructions.Instruction>) stack.clone();
             Collections.reverse(stack2);
 
@@ -534,7 +529,7 @@ public abstract class Instructions {
         }
 
         @Override
-        Instruction create(String s, Block __) {
+        public Instruction create(String s, Block __) {
             return new Break();
         }
 
@@ -544,16 +539,16 @@ public abstract class Instructions {
         }
     }
 
-    static class Continue extends Instruction {
+    public static class Continue extends Instruction {
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.CONTINUE.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.CONTINUE.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             ArrayList<Instructions.Instruction> stack2 = (ArrayList<Instructions.Instruction>) stack.clone();
             Collections.reverse(stack2);
 
@@ -567,7 +562,7 @@ public abstract class Instructions {
         }
 
         @Override
-        Instruction create(String s, Block __) {
+        public Instruction create(String s, Block __) {
             return new Continue();
         }
 
@@ -577,17 +572,17 @@ public abstract class Instructions {
         }
     }
 
-    static class Return extends Instruction {
+    public static class Return extends Instruction {
 
-        String value;
+        private String value;
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.RETURN.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.RETURN.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             Stack<Instructions.Instruction> stack2 = (Stack<Instructions.Instruction>) stack.clone();
             Collections.reverse(stack2);
 
@@ -603,9 +598,9 @@ public abstract class Instructions {
         }
 
         @Override
-        Instruction create(String s, Block b) {
+        public Instruction create(String s, Block b) {
             Return result = new Return();
-            String value = s.substring(Parser.nextSymboleDetached(s, Keywords.RETURN.val)+ Keywords.RETURN.val.length());
+            String value = s.substring(Parser.findSymboleDetached(s, Keywords.RETURN.val)+ Keywords.RETURN.val.length());
 
             if (value.isBlank())
                 value = null;
@@ -620,18 +615,18 @@ public abstract class Instructions {
         }
     }
 
-    static class While extends Instruction {
+    public static class While extends Instruction {
 
         public String value ;
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.WHILE.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.WHILE.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             stack.add(this);
             while (((Types.Veritas)Calculator.evaluate(value, stack)).value) {
                 for (Instruction i : block.instructions) {
@@ -649,10 +644,10 @@ public abstract class Instructions {
         }
 
         @Override
-        Instruction create(String s, Block b) {
+        public Instruction create(String s, Block b) {
             While result = new While();
             result.block = b;
-            result.value = s.substring(Parser.nextSymboleDetached(s.toUpperCase(), Keywords.WHILE.val)+ Keywords.WHILE.val.length());
+            result.value = s.substring(Parser.findSymboleDetached(s.toUpperCase(), Keywords.WHILE.val)+ Keywords.WHILE.val.length());
             return result;
         }
 
@@ -662,19 +657,19 @@ public abstract class Instructions {
         }
     }
 
-    static class For extends Instruction {
+    public static class For extends Instruction {
 
-        String list ;
-        String nomVar;
+        private String list ;
+        private String nomVar;
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.FOR.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.FOR.val) == 0 ;
         }
 
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             stack.add(this);
             for(Types.Type t : ((Types.Album)Calculator.evaluate(list, stack)).value) {
                 block.variables.put(Parser.clean(nomVar),t);
@@ -694,10 +689,10 @@ public abstract class Instructions {
         }
 
         @Override
-        Instruction create(String s, Block b) {
+        public Instruction create(String s, Block b) {
             For result = new For();
-            int listBegin = Parser.nextSymboleDetached(s.toUpperCase(), Keywords.FOR.val)+ Keywords.FOR.val.length();
-            int listEnd   = Parser.nextSymboleDetached(s.toUpperCase(), Keywords.NAME.val);
+            int listBegin = Parser.findSymboleDetached(s.toUpperCase(), Keywords.FOR.val)+ Keywords.FOR.val.length();
+            int listEnd   = Parser.findSymboleDetached(s.toUpperCase(), Keywords.NAME.val);
             result.block = b;
             result.list = s.substring(listBegin,listEnd);
             result.nomVar = s.substring(listEnd+ Keywords.NAME.val.length());
@@ -713,27 +708,27 @@ public abstract class Instructions {
     /*
      * un programme connait tout les programme defini interieurement, au meme niveau ainsi que les programme parent
      */
-    static class Program extends Instruction {
+    public static class Program extends Instruction {
 
-        String name;
+        public String name;
 
-        TreeMap<String,String> paramInfo = new TreeMap<>();
+        public TreeMap<String,String> paramInfo = new TreeMap<>();
 
-        String param;
+        private String param;
 
-        Types.Type retour = null;
+        public Types.Type retour = null;
 
         @Override
-        boolean isBegin(String s) {
+        public boolean isBegin(String s) {
             s=s.strip();
-            return Parser.nextSymboleDetached(s.toUpperCase(), Keywords.PROGRAM.val) == 0 ;
+            return Parser.findSymboleDetached(s.toUpperCase(), Keywords.PROGRAM.val) == 0 ;
         }
 
         /*
          * ne pas confondre avec un appel
          */
         @Override
-        void run(Stack<Instruction> stack) {
+        public void run(Stack<Instruction> stack) {
             stack.push(this);
             for (String s: Block.decoupe(param,";")) {
                 Const c = new Const();
@@ -759,13 +754,13 @@ public abstract class Instructions {
          * IUSSUS namefct
          */
         @Override
-        Instruction create(String s, Block b) {
+        public Instruction create(String s, Block b) {
             Program result = new Program();
 
-            s = s.substring(Parser.nextSymboleDetached(s.toUpperCase(), Keywords.PROGRAM.val)+ Keywords.PROGRAM.val.length());
+            s = s.substring(Parser.findSymboleDetached(s.toUpperCase(), Keywords.PROGRAM.val)+ Keywords.PROGRAM.val.length());
 
             int paramBeg = s.indexOf("[");
-            int typeBeg  = Parser.nextSymboleDetached(s, Keywords.RETURN.val);
+            int typeBeg  = Parser.findSymboleDetached(s, Keywords.RETURN.val);
             int paramEnd = typeBeg ==-1?s.length():typeBeg;
 
             if (paramBeg != -1) {

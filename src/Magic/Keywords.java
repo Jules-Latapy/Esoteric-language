@@ -17,9 +17,9 @@ public enum Keywords {
     PROGRAM("IUSSUS"),
     RETURN("REDIT");
 
-    public String val ;
+    public final String val ;
     
-    private Keywords(String word) {
+    Keywords(String word) {
         val=word;
     }
 }

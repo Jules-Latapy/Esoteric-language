@@ -34,7 +34,7 @@ class Pair<T> {
 }
 
 //VERITAS, ALBUM, NUMERUS, SYMBOLUM, PHRASIS
-abstract class Types{
+public abstract class Types{
 
     @SuppressWarnings("rawtypes")
     public static Set<Class<Type>> BASE_TYPE = new HashSet<>();
@@ -46,12 +46,12 @@ abstract class Types{
         }
     }
 
-    abstract static class Type<T> {
+    public abstract static class Type<T> {
 
         /**
          * "XCVM" -> new Numerus().create("XCVM")
          */
-        static Type createType(String data) {
+        public static Type createType(String data) {
             for (Class<Type> clas : BASE_TYPE) {
                 try {
                     Type t = (Type) clas.getDeclaredConstructors()[0].newInstance();
@@ -70,11 +70,11 @@ abstract class Types{
         public T value;
 
         //on peut garder les espaces autour de s
-        abstract Type<T> create(@WithDelimiter @PreCalculate String s);
+        public abstract Type<T> create(@WithDelimiter @PreCalculate String s);
 
-        abstract boolean isType(@WithDelimiter @PreCalculate String s);
+        public abstract boolean isType(@WithDelimiter @PreCalculate String s);
 
-        abstract Type<T> copy() ;
+        public abstract Type<T> copy() ;
 
         @Override
         public String toString() {
@@ -82,13 +82,13 @@ abstract class Types{
         }
     }
 
-    static class Numerus extends Type<Pair<List<RomanDigit>>> {
+    public static class Numerus extends Type<Pair<List<RomanDigit>>> {
 
-        boolean negativ = false ;
+        public boolean negativ = false ;
 
-        static int exp = 0 ;
+        private static int exp = 0 ;
 
-        static double toDouble(Numerus n) {
+        public static double toDouble(Numerus n) {
 
             int postVirg = 0 ;
             int preVirg  = 0 ;
@@ -132,7 +132,7 @@ abstract class Types{
             .replaceAll("DD","M");
         }
 
-        static Numerus toNumerus(double d) {
+        public static Numerus toNumerus(double d) {
             boolean negativ = d<0;
 
             String rightS = integerToNumerusString((int)abs(d));
@@ -156,7 +156,7 @@ abstract class Types{
          * XI   -> 11
          */
         @Override
-        Numerus create(String s) {
+        public Numerus create(String s) {
 
             Numerus           result = new Numerus();
             Pair<List<RomanDigit>> value  = new Pair(new ArrayList<>(),new ArrayList<>());
@@ -209,7 +209,7 @@ abstract class Types{
         }
 
         @Override
-        boolean isType(String s) {
+        public boolean isType(String s) {
             if (s==null || s.isEmpty()) return false ;
             s=s.strip();
             for (RomanDigit r: RomanDigit.values()) {
@@ -220,7 +220,7 @@ abstract class Types{
         }
 
         @Override
-        Numerus copy() {
+        public Numerus copy() {
             Numerus result = new Numerus();
             Pair<List<RomanDigit>> value = new Pair(new ArrayList<>(),new ArrayList<>());
             value.right.addAll(this.value.right);
@@ -245,10 +245,10 @@ abstract class Types{
         }
     }
 
-    static class Veritas extends Type<Boolean> {
+    public static class Veritas extends Type<Boolean> {
 
         @Override
-        Veritas create(String s) {
+        public Veritas create(String s) {
             s=s.strip();
             Veritas result = new Veritas();
             if (s.equalsIgnoreCase("VERUM")){
@@ -263,7 +263,7 @@ abstract class Types{
             return result;
         }
         @Override
-        boolean isType(String s) {
+        public boolean isType(String s) {
             if (s==null) return false ;
             s=s.strip();
             if (s.isEmpty()) return false ;
@@ -271,7 +271,7 @@ abstract class Types{
         }
 
         @Override
-        Veritas copy() {
+        public Veritas copy() {
             Veritas result = new Veritas();
             result.value = this.value;
             return result;
@@ -286,10 +286,10 @@ abstract class Types{
         }
     }
 
-    static class Phrasis extends Type<String> {
+    public static class Phrasis extends Type<String> {
 
         @Override
-        Phrasis create(String s) {
+        public Phrasis create(String s) {
             s=s.strip();
             Phrasis p = new Phrasis();
             p.value = s.substring(1, s.length()-1);
@@ -297,7 +297,7 @@ abstract class Types{
         }
 
         @Override
-        boolean isType(String s) {
+        public boolean isType(String s) {
             if (s==null) return false ;
             s=s.strip();
             if (s.isEmpty()) return false ;
@@ -305,7 +305,7 @@ abstract class Types{
         }
 
         @Override
-        Phrasis copy() {
+        public Phrasis copy() {
             Phrasis result = new Phrasis();
             result.value = this.value;
             return result;
@@ -325,10 +325,10 @@ abstract class Types{
         }
     }
 
-    static class Symbolum extends Type<Character> {
+    public static class Symbolum extends Type<Character> {
 
         @Override
-        Symbolum create(String s) {
+        public Symbolum create(String s) {
             s=s.strip();
             Symbolum c = new Symbolum();
             c.value = s.charAt(1);
@@ -336,7 +336,7 @@ abstract class Types{
         }
 
         @Override
-        boolean isType(String s) {
+        public boolean isType(String s) {
             if (s==null) return false ;
             s=s.strip();
             if (s.isEmpty()) return false ;
@@ -344,7 +344,7 @@ abstract class Types{
         }
 
         @Override
-        Symbolum copy() {
+        public Symbolum copy() {
             Symbolum result = new Symbolum();
             result.value = this.value;
             return result;
@@ -357,10 +357,10 @@ abstract class Types{
     }
 
     @SuppressWarnings("rawtypes")
-    static class Album extends Type<ArrayList<Type>> {
+    public static class Album extends Type<ArrayList<Type>> {
 
         @Override
-        Album create(String s) {
+        public Album create(String s) {
             s=s.strip().substring(1, s.length()-1);
 
             Album result = new Album();
@@ -375,7 +375,7 @@ abstract class Types{
         }
 
         @Override
-        boolean isType(String s) {
+        public boolean isType(String s) {
             if (s==null) return false ;
             s=s.strip();
             if (s.isEmpty()) return false ;
@@ -424,7 +424,7 @@ abstract class Types{
         }
 
         @Override
-        Album copy() {
+        public Album copy() {
             Album result = new Album();
             ArrayList<Type> value = new ArrayList<>();
             for (Type t :result.value)

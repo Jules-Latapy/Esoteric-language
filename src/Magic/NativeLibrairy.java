@@ -19,7 +19,8 @@ public class NativeLibrairy {
         /*------math------*/
         new NativeFunction("IUSSUS ABS[NUMERUS NOMINE n] REDIT NUMERUS", main, (l) -> {
             Types.Numerus result = new Types.Numerus();
-            result.value = Types.Numerus.toNumerus(Math.abs(Types.Numerus.toDouble((Types.Numerus)l.get(0)))).value;
+            result.value = ((Types.Numerus)l.get(0)).value;
+            result.negativ = false;
             return result;
         });
         /*

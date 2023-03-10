@@ -90,7 +90,7 @@ public class Calculator {
         /*------------------------*/
 
         for (Method m : operators) {
-            int index = Parser.nextSymboleDetached(s, m.getName()) ;
+            int index = Parser.findSymboleDetached(s, m.getName()) ;
             if (index!=-1) {
                 try {
 
@@ -116,7 +116,7 @@ public class Calculator {
         /*        FUNCTION CALL        */
         /*-----------------------------*/
 
-        int indexBang = Parser.nextSymbol(s,"!");
+        int indexBang = Parser.findSymbol(s,"!");
 
         if (indexBang!=-1) {
             Types.Type e = evaluate(s.substring(indexBang+1),stack);
@@ -303,14 +303,14 @@ public class Calculator {
 
     private static int[] getInnerBlock(String s) {
 
-        int begin = Parser.nextSymbol(s,"(");
+        int begin = Parser.findSymbol(s,"(");
         int end  = -1;
 
         if (begin!=-1) {
-            while(Parser.nextSymbol(s.substring(begin+"(".length()),"(")!=-1) {
-                begin += Parser.nextSymbol(s.substring(begin+"(".length()), "(")+"(".length();
+            while(Parser.findSymbol(s.substring(begin+"(".length()),"(")!=-1) {
+                begin += Parser.findSymbol(s.substring(begin+"(".length()), "(")+"(".length();
             }
-            end = Parser.nextSymbol(s.substring(begin),")")+")".length();
+            end = Parser.findSymbol(s.substring(begin),")")+")".length();
         }
 
         return new int[]{begin,begin+end};

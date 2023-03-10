@@ -16,7 +16,7 @@ public class NativeFunction {
 
         coorespondance.block = new Instructions.Block() {
             @Override
-            void run(Stack<Instructions.Instruction> stack) {
+            public void run(Stack<Instructions.Instruction> stack) {
                 List<Types.Type> params = new ArrayList<>();
                 for (String name : coorespondance.paramInfo.keySet())
                     if (this.variables.containsKey(name))
